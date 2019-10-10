@@ -1,4 +1,4 @@
-package gmc
+package main
 
 import (
 	"github.com/blizztrack/gmc"
