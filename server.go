@@ -80,22 +80,18 @@ func HandleClient(conn *conn) {
 		case "set":
 			set := &commands.SetCommand{}
 			res = set.Handle(payload, conn)
-			break
-		case "get":
+		case "get", "gat":
 			get := &commands.GetCommand{}
 			res = get.Handle(payload)
-			break
-		case "gets":
+		case "gets", "gats":
 			gets := &commands.GetsCommand{}
 			res = gets.Handle(payload)
 		case "delete":
 			del := &commands.DeleteCommand{}
 			res = del.Handle(payload)
-			break
 		case "flush_all":
 			flush := &commands.FlushAllCommand{}
 			res = flush.Handle(payload)
-			break
 		case "version":
 			res = responses.MessageResponse{Message: fmt.Sprintf(responses.StatusVersion, Version)}
 		case "touch":
