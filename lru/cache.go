@@ -2,6 +2,7 @@ package lru
 
 import (
 	"errors"
+	"runtime"
 	"sync"
 )
 
@@ -33,4 +34,6 @@ func Flush() {
 	mutex.Lock()
 	cache = make(map[string]*Item)
 	mutex.Unlock()
+
+	runtime.GC()
 }

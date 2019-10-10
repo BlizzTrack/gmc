@@ -56,7 +56,7 @@ func HandleClient(conn *conn) {
 			}
 			_, _ = conn.rwc.WriteString(err.Error())
 			_ = conn.rwc.Flush()
-			continue
+			return
 		}
 
 		temp := strings.TrimSpace(string(inLine))
