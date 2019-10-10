@@ -1,9 +1,13 @@
 package lru
 
-import "errors"
+import (
+	"errors"
+	"sync"
+)
 
 var (
 	cache = make(map[string]*Item)
+	mutex sync.Mutex
 )
 
 func Set(item *Item) {
@@ -11,7 +15,11 @@ func Set(item *Item) {
 }
 
 func Get(key string) (*Item, error) {
-	if value, ok := cache[key]; ok {
+	mutex.Lock()
+	value, ok := cache[key]
+	mutex.Unlock()
+
+	if ok {
 		return value, nil
 	}
 
@@ -19,9 +27,13 @@ func Get(key string) (*Item, error) {
 }
 
 func Delete(key string) {
+	mutex.Lock()
 	delete(cache, key)
+	mutex.Unlock()
 }
 
 func Flush() {
+	mutex.Lock()
 	cache = make(map[string]*Item)
+	mutex.Unlock()
 }

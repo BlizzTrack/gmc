@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	if err := gmc.NewServer(); err != nil {
+	if err := gmc.NewServer(":11212"); err != nil {
 		log.Panic(err)
 	}
 }

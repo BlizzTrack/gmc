@@ -20,6 +20,14 @@ func (m MessageResponse) WriteResponse(writer *conn) error {
 	return err
 }
 
+type InvalidParamLengthResponse struct{}
+
+func (m InvalidParamLengthResponse) WriteResponse(writer *conn) error {
+	n, err := writer.RWC.WriteString(fmt.Sprintf(StatusClientError, "invalid number of parameters sent"))
+	log.Printf("wrote %d bytes to client", n)
+	return err
+}
+
 type ItemResponse struct {
 	Item *lru.Item
 }

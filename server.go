@@ -2,6 +2,7 @@ package gmc
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -15,8 +16,8 @@ type conn struct {
 
 const Version = "0.0.1"
 
-func NewServer() error {
-	l, e := net.Listen("tcp", ":11212")
+func NewServer(address string) error {
+	l, e := net.Listen("tcp", address)
 	if e != nil {
 		return e
 	}
@@ -62,20 +63,25 @@ func handleClient(conn *conn) {
 		switch strings.ToLower(command) {
 		case "set":
 			set := &SetCommand{}
-			res = set.Handle(payload, conn)
+			res = set.handle(payload, conn)
 			break
 		case "get":
 			get := &GetCommand{}
-			res = get.Handle(payload)
+			res = get.handle(payload)
 			break
 		case "delete":
 			del := &DeleteCommand{}
-			res = del.Handle(payload)
+			res = del.handle(payload)
 			break
 		case "flush_all":
 			flush := &FlushAllCommand{}
-			res = flush.Handle(payload)
+			res = flush.handle(payload)
 			break
+		case "version":
+			res = MessageResponse{Message: fmt.Sprintf(StatusVersion, Version)}
+		case "touch":
+			touch := &TouchCommand{}
+			res = touch.handle(payload)
 		case "quit":
 			return
 		}

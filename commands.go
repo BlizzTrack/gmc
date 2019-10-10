@@ -17,8 +17,15 @@ type SetCommand struct {
 	Payload []byte
 }
 
-func (set *SetCommand) Handle(payload []string, client *conn) Response {
-	set.read(payload)
+func (set *SetCommand) handle(payload []string, client *conn) Response {
+	if len(payload) < 4 || len(payload) > 5 {
+		return InvalidParamLengthResponse{}
+	}
+
+	err := set.read(payload)
+	if err != nil {
+		return MessageResponse{fmt.Sprintf(StatusClientError, err)}
+	}
 
 	item := &lru.Item{
 		Key:   set.Key,
@@ -57,18 +64,34 @@ func (set *SetCommand) Handle(payload []string, client *conn) Response {
 	return MessageResponse{Message: StatusStored}
 }
 
-func (set *SetCommand) read(pieces []string) {
-	set.Key = pieces[0]
-	set.Flags, _ = strconv.Atoi(pieces[1])
-	set.ExpTime, _ = strconv.ParseInt(pieces[2], 10, 64)
-	set.Length, _ = strconv.ParseInt(pieces[3], 10, 64)
+func (set *SetCommand) read(payload []string) error {
+	var err error
+	set.Key = payload[0]
+	set.Flags, err = strconv.Atoi(payload[1])
+	if err != nil {
+		return err
+	}
+	set.ExpTime, err = strconv.ParseInt(payload[2], 10, 64)
+	if err != nil {
+		return err
+	}
+	set.Length, err = strconv.ParseInt(payload[3], 10, 64)
+	if err != nil {
+		return err
+	}
 
-	set.NoReply = len(pieces) == 5 && isNoReply(pieces[4])
+	set.NoReply = len(payload) == 5 && isNoReply(payload[4])
+
+	return nil
 }
 
 type GetCommand struct{}
 
-func (get *GetCommand) Handle(payload []string) Response {
+func (get *GetCommand) handle(payload []string) Response {
+	if len(payload) < 1 || len(payload) > 1 {
+		return InvalidParamLengthResponse{}
+	}
+
 	item, err := lru.Get(payload[0])
 	if err != nil {
 		return MessageResponse{Message: StatusNotFound}
@@ -83,9 +106,39 @@ func (get *GetCommand) Handle(payload []string) Response {
 	return ItemResponse{Item: item}
 }
 
+type TouchCommand struct{}
+
+func (get *TouchCommand) handle(payload []string) Response {
+	if len(payload) < 2 || len(payload) > 3 {
+		return InvalidParamLengthResponse{}
+	}
+
+	item, err := lru.Get(payload[0])
+	if err != nil {
+		return MessageResponse{Message: StatusNotFound}
+	}
+	if item.IsExpired() {
+		lru.Delete(item.Key)
+
+		return MessageResponse{Message: StatusNotFound}
+	}
+	ExpTime, err := strconv.ParseInt(payload[1], 10, 64)
+	if err != nil {
+		return MessageResponse{fmt.Sprintf(StatusClientError, err)}
+	}
+
+	item.SetExpires(ExpTime)
+
+	if len(payload) == 3 && isNoReply(payload[2]) {
+		return nil
+	}
+
+	return MessageResponse{Message: StatusTouched}
+}
+
 type DeleteCommand struct{}
 
-func (del *DeleteCommand) Handle(payload []string) Response {
+func (del *DeleteCommand) handle(payload []string) Response {
 	lru.Delete(payload[0])
 
 	if len(payload) == 2 && isNoReply(payload[1]) {
@@ -97,7 +150,7 @@ func (del *DeleteCommand) Handle(payload []string) Response {
 
 type FlushAllCommand struct{}
 
-func (flush *FlushAllCommand) Handle(payload []string) Response {
+func (flush *FlushAllCommand) handle(payload []string) Response {
 	lru.Flush()
 
 	return MessageResponse{Message: StatusOK}
