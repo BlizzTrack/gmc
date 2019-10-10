@@ -87,7 +87,7 @@ func (c *conn) handle() error {
 
 	temp := strings.TrimSpace(string(inLine))
 	if temp == "" {
-		return responses.Error
+		return nil
 	}
 
 	log.Printf("client sent command: %s", temp)
@@ -123,6 +123,9 @@ func (c *conn) handle() error {
 		res = responses.MessageResponse{Message: fmt.Sprintf(responses.StatusVersion, Version)}
 	case "touch":
 		touch := &commands.TouchCommand{}
+		res = touch.Handle(payload)
+	case "has":
+		touch := &commands.HasCommand{}
 		res = touch.Handle(payload)
 	case "quit":
 		if len(line) == 4 {

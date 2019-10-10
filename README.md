@@ -2,6 +2,8 @@
 Memcached like server in golang
 
 ## Supported protocol functions
+
+#### Memcached protocol
 | Function |      Status |
 |----------|:-------------:|
 | get |  finished   |
@@ -16,6 +18,11 @@ Memcached like server in golang
 | cas |  not started   |
 | incr  |  not started   |
 | decr   |  not started   |
+
+#### Custom functions
+| Function |      Status | What it does |
+|----------|:-------------:|----------:|
+| has |  finished   | returns if a key exist without all the payload |
 
 ## Building
 #### Source
