@@ -16,16 +16,14 @@ type MessageResponse struct {
 }
 
 func (m MessageResponse) WriteResponse(out io.Writer) error {
-	n, err := out.Write([]byte(m.Message))
-	log.Printf("wrote %d bytes to client", n)
+	_, err := out.Write([]byte(m.Message))
 	return err
 }
 
 type InvalidParamLengthResponse struct{}
 
 func (m InvalidParamLengthResponse) WriteResponse(out io.Writer) error {
-	n, err := fmt.Fprintf(out, StatusClientError, "invalid number of parameters sent")
-	log.Printf("wrote %d bytes to client", n)
+	_, err := fmt.Fprintf(out, StatusClientError, "invalid number of parameters sent")
 	return err
 }
 
