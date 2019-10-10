@@ -28,7 +28,7 @@ Install the latest version of golang
 
 #### Go Get
 ```
-go get -u github.com/BlizzTrack/gmc/cmd
+> go get -u github.com/BlizzTrack/gmc/cmd/gmc
 ```
 
 ## Binary builds
