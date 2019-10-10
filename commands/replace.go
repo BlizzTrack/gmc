@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-type SetCommand struct {
+type ReplaceCommand struct {
 	Key     string
 	Flags   int
 	ExpTime int64
@@ -18,87 +18,92 @@ type SetCommand struct {
 	Payload []byte
 }
 
-func (set *SetCommand) Handle(payload []string, client io.Reader) responses.Response {
+func (replace *ReplaceCommand) Handle(payload []string, client io.Reader) responses.Response {
 	if len(payload) < 4 || len(payload) > 5 {
 		_, err := readLine(client)
 		if err != nil {
 			log.Printf("failed to read line to the end")
 		}
-
 		return responses.InvalidParamLengthResponse{}
 	}
 
-	err := set.read(payload)
+	err := replace.read(payload)
 	if err != nil {
 		_, err = readLine(client)
 		if err != nil {
 			log.Printf("failed to read line to the end")
 		}
-
 		return responses.MessageResponse{Message: fmt.Sprintf(responses.StatusClientError, err)}
 	}
 
-	n := make([]byte, set.Length)
+	if !lru.Has(replace.Key) {
+		_, err = readLine(client)
+		if err != nil {
+			log.Printf("failed to read line to the end")
+		}
+		return &responses.MessageResponse{Message: responses.StatusNotStored}
+	}
+
+	n := make([]byte, replace.Length)
 	size, err := io.ReadFull(client, n)
+
 	if err != nil {
 		_, err = readLine(client)
 		if err != nil {
 			log.Printf("failed to read line to the end")
 		}
-
 		log.Printf("failed to read payload: %+v", err)
-		if set.NoReply {
+		if replace.NoReply {
 			return nil
 		}
 		return responses.MessageResponse{Message: fmt.Sprintf(responses.StatusClientError, "bad data chunk")}
 	}
 
-	if size != set.Length {
+	if size != replace.Length {
 		_, err = readLine(client)
 		if err != nil {
 			log.Printf("failed to read line to the end")
 		}
-
-		log.Printf("failed to read payload wanted size %d got %d", set.Length, len(n))
-		if set.NoReply {
+		log.Printf("failed to read payload wanted size %d got %d", replace.Length, len(n))
+		if replace.NoReply {
 			return nil
 		}
 		return responses.MessageResponse{Message: fmt.Sprintf(responses.StatusClientError, "bad data chunk")}
 	}
 
 	item := &lru.Item{
-		Key:   set.Key,
-		Flags: set.Flags,
+		Key:   replace.Key,
+		Flags: replace.Flags,
 	}
-	item.SetExpires(set.ExpTime)
-	item.Value = make([]byte, set.Length)
+	item.SetExpires(replace.ExpTime)
+	item.Value = make([]byte, replace.Length)
 	copy(item.Value, n)
+
 	lru.Set(item)
 
-	if set.NoReply {
+	if replace.NoReply {
 		return nil
 	}
-
 	return responses.MessageResponse{Message: responses.StatusStored}
 }
 
-func (set *SetCommand) read(payload []string) error {
+func (replace *ReplaceCommand) read(payload []string) error {
 	var err error
-	set.Key = payload[0]
-	set.Flags, err = strconv.Atoi(payload[1])
+	replace.Key = payload[0]
+	replace.Flags, err = strconv.Atoi(payload[1])
 	if err != nil {
 		return err
 	}
-	set.ExpTime, err = strconv.ParseInt(payload[2], 10, 64)
+	replace.ExpTime, err = strconv.ParseInt(payload[2], 10, 64)
 	if err != nil {
 		return err
 	}
-	set.Length, err = strconv.Atoi(payload[3])
+	replace.Length, err = strconv.Atoi(payload[3])
 	if err != nil {
 		return err
 	}
 
-	set.NoReply = len(payload) == 5 && isNoReply(payload[4])
+	replace.NoReply = len(payload) == 5 && isNoReply(payload[4])
 
 	return nil
 }

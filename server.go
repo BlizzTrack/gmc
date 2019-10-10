@@ -35,10 +35,10 @@ func NewServer(address string) error {
 	return serve(l)
 }
 
-func newconn(rwc net.Conn) (c *conn) {
+func newConn(rwc net.Conn) (c *conn) {
 	c = new(conn)
 	c.conn = rwc
-	c.rwc = bufio.NewReadWriter(bufio.NewReader(rwc), bufio.NewWriter(rwc))
+	c.rwc = bufio.NewReadWriter(bufio.NewReaderSize(rwc, 1048576), bufio.NewWriter(rwc))
 	return c
 }
 
@@ -50,73 +50,102 @@ func serve(l net.Listener) error {
 			return e
 		}
 
-		go HandleClient(newconn(rw))
+		log.Printf("handling client: %+v", rw.RemoteAddr())
+
+		conn := newConn(rw)
+		go conn.serve()
 	}
 }
 
-func HandleClient(conn *conn) {
-	defer conn.conn.Close()
+func (c *conn) serve() {
+	defer c.conn.Close()
 
 	for {
-		inLine, err := conn.ReadLine()
-		if err != nil || len(inLine) == 0 {
+		err := c.handle()
+		if err != nil {
 			if err == io.EOF {
 				return
 			}
-			_, _ = conn.rwc.WriteString(err.Error())
-			_ = conn.rwc.Flush()
-			return
+			_, _ = c.rwc.WriteString(err.Error())
 		}
-
-		temp := strings.TrimSpace(string(inLine))
-		log.Printf("client sent command: %s", temp)
-
-		line := strings.Split(temp, " ")
-		var res responses.Response
-		command := line[0]
-		payload := line[1:]
-
-		switch strings.ToLower(command) {
-		case "set":
-			set := &commands.SetCommand{}
-			res = set.Handle(payload, conn)
-		case "get", "gat":
-			get := &commands.GetCommand{}
-			res = get.Handle(payload)
-		case "gets", "gats":
-			gets := &commands.GetsCommand{}
-			res = gets.Handle(payload)
-		case "delete":
-			del := &commands.DeleteCommand{}
-			res = del.Handle(payload)
-		case "flush_all":
-			flush := &commands.FlushAllCommand{}
-			res = flush.Handle(payload)
-		case "version":
-			res = responses.MessageResponse{Message: fmt.Sprintf(responses.StatusVersion, Version)}
-		case "touch":
-			touch := &commands.TouchCommand{}
-			res = touch.Handle(payload)
-		case "quit":
-			return
-		}
-
-		if res != nil {
-			if err := res.WriteResponse(conn.rwc); err != nil {
-				log.Printf("write to client failed %+v", err)
-				return
-			}
-		}
-
-		if err := conn.rwc.Flush(); err != nil {
-			log.Printf("failed to flush buffer: %v", err)
-			return
-		}
+		c.end()
 	}
 }
 
+func (c *conn) handle() error {
+	inLine, err := c.ReadLine()
+	if err != nil || len(inLine) == 0 {
+		if err == io.EOF {
+			return io.EOF
+		}
+		if err != nil {
+			_, _ = c.rwc.WriteString(err.Error())
+		}
+
+		return responses.Error
+	}
+
+	temp := strings.TrimSpace(string(inLine))
+	if temp == "" {
+		return responses.Error
+	}
+
+	log.Printf("client sent command: %s", temp)
+
+	line := strings.Split(temp, " ")
+	var res responses.Response
+	command := line[0]
+	payload := line[1:]
+
+	switch strings.ToLower(command) {
+	case "set":
+		set := &commands.SetCommand{}
+		res = set.Handle(payload, c.rwc)
+	case "add":
+		set := &commands.AddCommand{}
+		res = set.Handle(payload, c.rwc)
+	case "replace":
+		set := &commands.ReplaceCommand{}
+		res = set.Handle(payload, c.rwc)
+	case "get", "gat":
+		get := &commands.GetCommand{}
+		res = get.Handle(payload)
+	case "gets", "gats":
+		gets := &commands.GetsCommand{}
+		res = gets.Handle(payload)
+	case "delete":
+		del := &commands.DeleteCommand{}
+		res = del.Handle(payload)
+	case "flush_all":
+		flush := &commands.FlushAllCommand{}
+		res = flush.Handle(payload)
+	case "version":
+		res = responses.MessageResponse{Message: fmt.Sprintf(responses.StatusVersion, Version)}
+	case "touch":
+		touch := &commands.TouchCommand{}
+		res = touch.Handle(payload)
+	case "quit":
+		if len(line) == 4 {
+			return io.EOF
+		}
+		return responses.Error
+	}
+
+	if res != nil {
+		if err := res.WriteResponse(c.rwc); err != nil {
+			return fmt.Errorf("write to client failed %+v", err)
+		}
+	}
+
+	return nil
+}
+
+func (c *conn) end() {
+	c.rwc.Flush()
+}
+
 func (c *conn) ReadLine() (line []byte, err error) {
-	line, _, err = c.rwc.ReadLine()
+	line, err = c.rwc.ReadBytes('\n')
 	return
 }
 

@@ -1,2 +1,35 @@
 # gmc
 Memcached like server in golang
+
+## Supported protocol functions
+| Function |      Status |
+|----------|:-------------:|
+| get |  finished   |
+| set |  finished   |
+| add |  finished   |
+| replace |  finished   |
+| delete |  finished   |
+| gat |  finished   |
+| gats |  finished   |
+| flush_all | finished |
+| stats |  not started   |
+| cas |  not started   |
+| incr  |  not started   |
+| decr   |  not started   |
+
+## Building
+#### Source
+Install the latest version of golang
+```
+> git clone git@github.com:BlizzTrack/gmc.git
+> cd gmc
+> go build -o gmc ./cmd/main.go
+```
+
+#### Go Get
+```
+go get -u github.com/BlizzTrack/gmc/cmd
+```
+
+## Binary builds
+-- Coming Soon --

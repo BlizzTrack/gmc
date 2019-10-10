@@ -25,17 +25,18 @@ func Get(key string) (*Item, error) {
 }
 
 func Delete(key string) {
-	mutex.Lock()
 	delete(cache, key)
-	mutex.Unlock()
 }
 
 func Flush() {
-	mutex.Lock()
 	cache = make(map[string]*Item)
-	mutex.Unlock()
 
 	runtime.GC()
+}
+
+func Has(key string) bool {
+	_, ok := cache[key]
+	return ok
 }
 
 func Clean() {
