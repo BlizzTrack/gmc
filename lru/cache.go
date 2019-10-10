@@ -37,3 +37,11 @@ func Flush() {
 
 	runtime.GC()
 }
+
+func Clean() {
+	for key, item := range cache {
+		if item.IsExpired() {
+			Delete(key)
+		}
+	}
+}

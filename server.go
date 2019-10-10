@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/blizztrack/gmc/commands"
+	"github.com/blizztrack/gmc/lru"
 	"github.com/blizztrack/gmc/responses"
 	"io"
 	"log"
 	"net"
 	"strings"
+	"time"
 )
 
 type conn struct {
@@ -23,6 +25,13 @@ func NewServer(address string) error {
 	if e != nil {
 		return e
 	}
+
+	go func() {
+		for range time.Tick(time.Second) {
+			lru.Clean()
+		}
+	}()
+
 	return serve(l)
 }
 
