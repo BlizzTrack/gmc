@@ -18,6 +18,8 @@ Memcached like server in golang
 | cas |  not started   |
 | incr  |  finished   |
 | decr   |  finished   |
+| append | not started |
+| prepend | not started |
 
 #### Custom functions
 | Function |      Status | What it does |
