@@ -3,14 +3,15 @@ package gmc
 import (
 	"bufio"
 	"fmt"
+	"github.com/blizztrack/gmc/commands"
 	"io"
 	"log"
 	"net"
 	"strings"
 )
 
-type conn struct {
-	conn net.Conn
+type Conn struct {
+	Conn net.Conn
 	RWC  *bufio.ReadWriter
 }
 
@@ -24,9 +25,9 @@ func NewServer(address string) error {
 	return serve(l)
 }
 
-func newConn(rwc net.Conn) (c *conn) {
-	c = new(conn)
-	c.conn = rwc
+func newConn(rwc net.Conn) (c *Conn) {
+	c = new(Conn)
+	c.Conn = rwc
 	c.RWC = bufio.NewReadWriter(bufio.NewReaderSize(rwc, 1048576), bufio.NewWriter(rwc))
 	return c
 }
@@ -39,14 +40,14 @@ func serve(l net.Listener) error {
 			return e
 		}
 
-		go handleClient(newConn(rw))
+		go HandleClient(newConn(rw))
 	}
 }
 
-func handleClient(conn *conn) {
-	defer conn.conn.Close()
+func HandleClient(Conn *Conn) {
+	defer Conn.Conn.Close()
 	for {
-		netData, err := conn.ReadLine()
+		netData, err := Conn.ReadLine()
 		if err != nil {
 			log.Println(err)
 			return
@@ -62,50 +63,50 @@ func handleClient(conn *conn) {
 
 		switch strings.ToLower(command) {
 		case "set":
-			set := &SetCommand{}
-			res = set.handle(payload, conn)
+			set := &commands.SetCommand{}
+			res = set.Handle(payload, Conn)
 			break
 		case "get":
-			get := &GetCommand{}
-			res = get.handle(payload)
+			get := &commands.GetCommand{}
+			res = get.Handle(payload)
 			break
 		case "delete":
-			del := &DeleteCommand{}
-			res = del.handle(payload)
+			del := &commands.DeleteCommand{}
+			res = del.Handle(payload)
 			break
 		case "flush_all":
-			flush := &FlushAllCommand{}
-			res = flush.handle(payload)
+			flush := &commands.FlushAllCommand{}
+			res = flush.Handle(payload)
 			break
 		case "version":
 			res = MessageResponse{Message: fmt.Sprintf(StatusVersion, Version)}
 		case "touch":
-			touch := &TouchCommand{}
-			res = touch.handle(payload)
+			touch := &commands.TouchCommand{}
+			res = touch.Handle(payload)
 		case "quit":
 			return
 		}
 
 		if res != nil {
-			if err := res.WriteResponse(conn); err != nil {
+			if err := res.WriteResponse(Conn); err != nil {
 				log.Printf("write to client failed %+v", err)
 				return
 			}
 		}
 
-		if err := conn.RWC.Flush(); err != nil {
+		if err := Conn.RWC.Flush(); err != nil {
 			log.Printf("failed to flush buffer: %v", err)
 			return
 		}
 	}
 }
 
-func (c *conn) ReadLine() (line []byte, err error) {
+func (c *Conn) ReadLine() (line []byte, err error) {
 	line, _, err = c.RWC.ReadLine()
 	return
 }
 
-func (c *conn) Read(p []byte) (n int, err error) {
+func (c *Conn) Read(p []byte) (n int, err error) {
 	return io.ReadFull(c.RWC, p)
 }
 
