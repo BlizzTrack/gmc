@@ -10,7 +10,7 @@ import (
 type DecrCommand struct{}
 
 func (*DecrCommand) Handle(payload []string) responses.Response {
-	if len(payload) != 2 {
+	if len(payload) < 2 || len(payload) > 3 {
 		return responses.InvalidParamLengthResponse{}
 	}
 
@@ -41,6 +41,10 @@ func (*DecrCommand) Handle(payload []string) responses.Response {
 
 	current = current - amount
 	value.Value = []byte(strconv.Itoa(current))
-	
+
+	if len(payload) == 3 && isNoReply(payload[2]) {
+		return nil
+	}
+
 	return responses.MessageResponse{Message: fmt.Sprintf("%d\r\n", current)}
 }
