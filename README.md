@@ -16,8 +16,8 @@ Memcached like server in golang
 | flush_all | finished |
 | stats |  not started   |
 | cas |  not started   |
-| incr  |  not started   |
-| decr   |  not started   |
+| incr  |  finished   |
+| decr   |  finished   |
 
 #### Custom functions
 | Function |      Status | What it does |

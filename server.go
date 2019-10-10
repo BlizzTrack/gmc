@@ -124,6 +124,12 @@ func (c *conn) handle() error {
 	case "touch":
 		touch := &commands.TouchCommand{}
 		res = touch.Handle(payload)
+	case "incr":
+		touch := &commands.IncrCommand{}
+		res = touch.Handle(payload)
+	case "decr":
+		touch := &commands.DecrCommand{}
+		res = touch.Handle(payload)
 	case "has":
 		touch := &commands.HasCommand{}
 		res = touch.Handle(payload)
