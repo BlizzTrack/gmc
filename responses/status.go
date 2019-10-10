@@ -1,4 +1,4 @@
-package gmc
+package responses
 
 import "errors"
 

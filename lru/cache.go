@@ -15,10 +15,7 @@ func Set(item *Item) {
 }
 
 func Get(key string) (*Item, error) {
-	mutex.Lock()
 	value, ok := cache[key]
-	mutex.Unlock()
-
 	if ok {
 		return value, nil
 	}

@@ -1,9 +1,11 @@
 package commands
 
 import (
+	"bufio"
 	"fmt"
-	"github.com/blizztrack/gmc"
 	"github.com/blizztrack/gmc/lru"
+	"github.com/blizztrack/gmc/responses"
+	"io"
 	"log"
 	"strconv"
 )
@@ -17,14 +19,14 @@ type SetCommand struct {
 	Payload []byte
 }
 
-func (set *SetCommand) Handle(payload []string, client *gmc.Conn) gmc.Response {
+func (set *SetCommand) Handle(payload []string, client io.Reader) responses.Response {
 	if len(payload) < 4 || len(payload) > 5 {
-		return gmc.InvalidParamLengthResponse{}
+		return responses.InvalidParamLengthResponse{}
 	}
 
 	err := set.read(payload)
 	if err != nil {
-		return gmc.MessageResponse{Message: fmt.Sprintf(gmc.StatusClientError, err)}
+		return responses.MessageResponse{Message: fmt.Sprintf(responses.StatusClientError, err)}
 	}
 
 	item := &lru.Item{
@@ -32,16 +34,14 @@ func (set *SetCommand) Handle(payload []string, client *gmc.Conn) gmc.Response {
 		Flags: set.Flags,
 	}
 	item.SetExpires(set.ExpTime)
-	log.Println(item.String())
-
-	n, err := client.ReadLine()
+	n, _, err := bufio.NewReader(client).ReadLine()
 
 	if err != nil {
 		log.Printf("failed to read payload: %+v", err)
 		if set.NoReply {
 			return nil
 		}
-		return gmc.MessageResponse{Message: fmt.Sprintf(gmc.StatusClientError, "bad data chunk")}
+		return responses.MessageResponse{Message: fmt.Sprintf(responses.StatusClientError, "bad data chunk")}
 	}
 
 	if int64(len(n)) != set.Length {
@@ -49,19 +49,18 @@ func (set *SetCommand) Handle(payload []string, client *gmc.Conn) gmc.Response {
 		if set.NoReply {
 			return nil
 		}
-		return gmc.MessageResponse{Message: fmt.Sprintf(gmc.StatusClientError, "bad data chunk")}
+		return responses.MessageResponse{Message: fmt.Sprintf(responses.StatusClientError, "bad data chunk")}
 	}
 
 	item.Value = make([]byte, len(n))
 	copy(item.Value, n)
 
 	lru.Set(item)
-	log.Println(item.String())
 
 	if set.NoReply {
 		return nil
 	}
-	return gmc.MessageResponse{Message: gmc.StatusStored}
+	return responses.MessageResponse{Message: responses.StatusStored}
 }
 
 func (set *SetCommand) read(payload []string) error {

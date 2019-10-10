@@ -2,30 +2,30 @@ package commands
 
 import (
 	"fmt"
-	"github.com/blizztrack/gmc"
 	"github.com/blizztrack/gmc/lru"
+	"github.com/blizztrack/gmc/responses"
 	"strconv"
 )
 
 type TouchCommand struct{}
 
-func (get *TouchCommand) Handle(payload []string) gmc.Response {
+func (get *TouchCommand) Handle(payload []string) responses.Response {
 	if len(payload) < 2 || len(payload) > 3 {
-		return gmc.InvalidParamLengthResponse{}
+		return responses.InvalidParamLengthResponse{}
 	}
 
 	item, err := lru.Get(payload[0])
 	if err != nil {
-		return gmc.MessageResponse{Message: gmc.StatusNotFound}
+		return responses.MessageResponse{Message: responses.StatusNotFound}
 	}
 	if item.IsExpired() {
 		lru.Delete(item.Key)
 
-		return gmc.MessageResponse{Message: gmc.StatusNotFound}
+		return responses.MessageResponse{Message: responses.StatusNotFound}
 	}
 	ExpTime, err := strconv.ParseInt(payload[1], 10, 64)
 	if err != nil {
-		return gmc.MessageResponse{Message: fmt.Sprintf(gmc.StatusClientError, err)}
+		return responses.MessageResponse{Message: fmt.Sprintf(responses.StatusClientError, err)}
 	}
 
 	item.SetExpires(ExpTime)
@@ -34,5 +34,5 @@ func (get *TouchCommand) Handle(payload []string) gmc.Response {
 		return nil
 	}
 
-	return gmc.MessageResponse{Message: gmc.StatusTouched}
+	return responses.MessageResponse{Message: responses.StatusTouched}
 }

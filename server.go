@@ -4,15 +4,16 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/blizztrack/gmc/commands"
+	"github.com/blizztrack/gmc/responses"
 	"io"
 	"log"
 	"net"
 	"strings"
 )
 
-type Conn struct {
-	Conn net.Conn
-	RWC  *bufio.ReadWriter
+type conn struct {
+	conn net.Conn
+	rwc  *bufio.ReadWriter
 }
 
 const Version = "0.0.1"
@@ -25,10 +26,10 @@ func NewServer(address string) error {
 	return serve(l)
 }
 
-func newConn(rwc net.Conn) (c *Conn) {
-	c = new(Conn)
-	c.Conn = rwc
-	c.RWC = bufio.NewReadWriter(bufio.NewReaderSize(rwc, 1048576), bufio.NewWriter(rwc))
+func newconn(rwc net.Conn) (c *conn) {
+	c = new(conn)
+	c.conn = rwc
+	c.rwc = bufio.NewReadWriter(bufio.NewReader(rwc), bufio.NewWriter(rwc))
 	return c
 }
 
@@ -40,36 +41,44 @@ func serve(l net.Listener) error {
 			return e
 		}
 
-		go HandleClient(newConn(rw))
+		go HandleClient(newconn(rw))
 	}
 }
 
-func HandleClient(Conn *Conn) {
-	defer Conn.Conn.Close()
+func HandleClient(conn *conn) {
+	defer conn.conn.Close()
+
 	for {
-		netData, err := Conn.ReadLine()
-		if err != nil {
-			log.Println(err)
-			return
+		inLine, err := conn.ReadLine()
+		if err != nil || len(inLine) == 0 {
+			if err == io.EOF {
+				return
+			}
+			_, _ = conn.rwc.WriteString(err.Error())
+			_ = conn.rwc.Flush()
+			continue
 		}
 
-		temp := strings.TrimSpace(string(netData))
+		temp := strings.TrimSpace(string(inLine))
 		log.Printf("client sent command: %s", temp)
 
 		line := strings.Split(temp, " ")
-		var res Response
+		var res responses.Response
 		command := line[0]
 		payload := line[1:]
 
 		switch strings.ToLower(command) {
 		case "set":
 			set := &commands.SetCommand{}
-			res = set.Handle(payload, Conn)
+			res = set.Handle(payload, conn)
 			break
 		case "get":
 			get := &commands.GetCommand{}
 			res = get.Handle(payload)
 			break
+		case "gets":
+			gets := &commands.GetsCommand{}
+			res = gets.Handle(payload)
 		case "delete":
 			del := &commands.DeleteCommand{}
 			res = del.Handle(payload)
@@ -79,7 +88,7 @@ func HandleClient(Conn *Conn) {
 			res = flush.Handle(payload)
 			break
 		case "version":
-			res = MessageResponse{Message: fmt.Sprintf(StatusVersion, Version)}
+			res = responses.MessageResponse{Message: fmt.Sprintf(responses.StatusVersion, Version)}
 		case "touch":
 			touch := &commands.TouchCommand{}
 			res = touch.Handle(payload)
@@ -88,25 +97,24 @@ func HandleClient(Conn *Conn) {
 		}
 
 		if res != nil {
-			if err := res.WriteResponse(Conn); err != nil {
+			if err := res.WriteResponse(conn.rwc); err != nil {
 				log.Printf("write to client failed %+v", err)
 				return
 			}
 		}
 
-		if err := Conn.RWC.Flush(); err != nil {
+		if err := conn.rwc.Flush(); err != nil {
 			log.Printf("failed to flush buffer: %v", err)
 			return
 		}
 	}
 }
 
-func (c *Conn) ReadLine() (line []byte, err error) {
-	line, _, err = c.RWC.ReadLine()
+func (c *conn) ReadLine() (line []byte, err error) {
+	line, _, err = c.rwc.ReadLine()
 	return
 }
 
-func (c *Conn) Read(p []byte) (n int, err error) {
-	return io.ReadFull(c.RWC, p)
+func (c *conn) Read(p []byte) (n int, err error) {
+	return io.ReadFull(c.rwc, p)
 }
-
