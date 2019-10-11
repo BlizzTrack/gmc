@@ -45,4 +45,5 @@ Install the latest version of golang
 
 ## Who use this
 [BlizzTrack](https://www.blizztrack.com)
+
 [Badge Directory](https://www.badgedirectory.com)
