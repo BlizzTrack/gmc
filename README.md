@@ -42,3 +42,7 @@ Install the latest version of golang
 
 ## Binary builds
 -- Coming Soon --
+
+## Who use this
+[BlizzTrack](https://www.blizztrack.com)
+[Badge Directory](https://www.badgedirectory.com)
