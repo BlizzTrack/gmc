@@ -17,7 +17,7 @@ type conn struct {
 	rwc  *bufio.ReadWriter
 }
 
-const Version = "0.0.1"
+const Version = "0.0.2"
 
 func NewServer(address string, lruSize int) error {
 	l, e := net.Listen("tcp", address)
@@ -26,6 +26,7 @@ func NewServer(address string, lruSize int) error {
 	}
 
 	lru.CreateLRU(lruSize)
+	lru.LRU.OnEvicted = onEvicted
 
 	return serve(l)
 }
@@ -155,4 +156,8 @@ func (c *conn) ReadLine() (line []byte, err error) {
 
 func (c *conn) Read(p []byte) (n int, err error) {
 	return io.ReadFull(c.rwc, p)
+}
+
+func onEvicted(key lru.Key, item *lru.Item) {
+	// TODO
 }
