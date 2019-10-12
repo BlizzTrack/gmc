@@ -1,4 +1,4 @@
-![Docker Automated build](https://img.shields.io/docker/automated/toyz/gmc?style=for-the-badge)
+[![Docker Automated build](https://img.shields.io/docker/automated/toyz/gmc?style=for-the-badge)](https://hub.docker.com/r/toyz/gmc)
 
 ## Supported protocol functions
 
