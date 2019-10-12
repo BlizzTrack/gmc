@@ -1,5 +1,4 @@
-# gmc
-Memcached like server in golang
+![Docker Automated build](https://img.shields.io/docker/automated/toyz/gmc?style=for-the-badge)
 
 ## Supported protocol functions
 
@@ -41,7 +40,7 @@ Install the latest version of golang
 ```
 
 ## Binary builds
--- Coming Soon --
+![Docker Automated build](https://img.shields.io/docker/automated/toyz/gmc?style=for-the-badge)
 
 ## Who use this
 [BlizzTrack](https://www.blizztrack.com)
