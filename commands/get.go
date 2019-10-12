@@ -12,13 +12,13 @@ func (get *GetCommand) Handle(payload []string) responses.Response {
 		return responses.InvalidParamLengthResponse{}
 	}
 
-	item, err := lru.Get(payload[0])
-	if err != nil {
+	item, ok := lru.LRU.Get(payload[0])
+	if !ok {
 		return responses.MessageResponse{Message: responses.StatusEnd}
 	}
 
 	if item.IsExpired() {
-		lru.Delete(item.Key)
+		lru.LRU.Remove(item.Key)
 
 		return responses.MessageResponse{Message: responses.StatusEnd}
 	}

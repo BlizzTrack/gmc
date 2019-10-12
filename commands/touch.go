@@ -14,12 +14,12 @@ func (get *TouchCommand) Handle(payload []string) responses.Response {
 		return responses.InvalidParamLengthResponse{}
 	}
 
-	item, err := lru.Get(payload[0])
-	if err != nil {
+	item, ok := lru.LRU.Get(payload[0])
+	if ok {
 		return responses.MessageResponse{Message: responses.StatusNotFound}
 	}
 	if item.IsExpired() {
-		lru.Delete(item.Key)
+		lru.LRU.Remove(item.Key)
 
 		return responses.MessageResponse{Message: responses.StatusNotFound}
 	}
@@ -27,8 +27,10 @@ func (get *TouchCommand) Handle(payload []string) responses.Response {
 	if err != nil {
 		return responses.MessageResponse{Message: fmt.Sprintf(responses.StatusClientError, err)}
 	}
-
 	item.SetExpires(ExpTime)
+
+	// Update the item in the cache so we move it to the top
+	lru.LRU.Add(item.Key, item)
 
 	if len(payload) == 3 && isNoReply(payload[2]) {
 		return nil

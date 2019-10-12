@@ -38,7 +38,7 @@ func (add *AddCommand) Handle(payload []string, client io.Reader) responses.Resp
 		return responses.MessageResponse{Message: fmt.Sprintf(responses.StatusClientError, err)}
 	}
 
-	if lru.Has(add.Key) {
+	if lru.LRU.Has(add.Key) {
 		_, err = readLine(client)
 		if err != nil {
 			log.Printf("failed to read line to the end")
@@ -82,7 +82,7 @@ func (add *AddCommand) Handle(payload []string, client io.Reader) responses.Resp
 	item.Value = make([]byte, add.Length)
 	copy(item.Value, n)
 
-	lru.Set(item)
+	lru.LRU.Add(item.Key, item)
 
 	if add.NoReply {
 		return nil

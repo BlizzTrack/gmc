@@ -10,7 +10,6 @@ import (
 	"log"
 	"net"
 	"strings"
-	"time"
 )
 
 type conn struct {
@@ -20,17 +19,13 @@ type conn struct {
 
 const Version = "0.0.1"
 
-func NewServer(address string) error {
+func NewServer(address string, lruSize int) error {
 	l, e := net.Listen("tcp", address)
 	if e != nil {
 		return e
 	}
 
-	go func() {
-		for range time.Tick(time.Second) {
-			lru.Clean()
-		}
-	}()
+	lru.CreateLRU(lruSize)
 
 	return serve(l)
 }

@@ -8,7 +8,7 @@ import (
 type FlushAllCommand struct{}
 
 func (flush *FlushAllCommand) Handle(payload []string) responses.Response {
-	lru.Clean()
+	lru.LRU.Clear()
 
 	return responses.MessageResponse{Message: responses.StatusOK}
 }

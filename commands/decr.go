@@ -21,8 +21,8 @@ func (*DecrCommand) Handle(payload []string) responses.Response {
 		return responses.MessageResponse{Message: responses.StatusError}
 	}
 
-	value, err := lru.Get(key)
-	if err != nil {
+	value, ok := lru.LRU.Get(key)
+	if !ok {
 		return responses.MessageResponse{Message: responses.StatusNotFound}
 	}
 
@@ -41,6 +41,8 @@ func (*DecrCommand) Handle(payload []string) responses.Response {
 
 	current = current - amount
 	value.Value = []byte(strconv.Itoa(current))
+
+	lru.LRU.Add(value.Key, value)
 
 	if len(payload) == 3 && isNoReply(payload[2]) {
 		return nil

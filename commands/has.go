@@ -12,7 +12,7 @@ func (*HasCommand) Handle(payload []string) responses.Response {
 		return responses.InvalidParamLengthResponse{}
 	}
 
-	if lru.Has(payload[0]) {
+	if lru.LRU.Has(payload[0]) {
 		return responses.MessageResponse{Message: responses.StatusExists}
 
 	}

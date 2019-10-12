@@ -8,7 +8,7 @@ import (
 type DeleteCommand struct{}
 
 func (del *DeleteCommand) Handle(payload []string) responses.Response {
-	lru.Delete(payload[0])
+	lru.LRU.Remove(payload[0])
 
 	if len(payload) == 2 && isNoReply(payload[1]) {
 		return nil

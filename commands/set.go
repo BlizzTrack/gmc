@@ -73,7 +73,7 @@ func (set *SetCommand) Handle(payload []string, client io.Reader) responses.Resp
 	item.SetExpires(set.ExpTime)
 	item.Value = make([]byte, set.Length)
 	copy(item.Value, n)
-	lru.Set(item)
+	lru.LRU.Add(item.Key, item)
 
 	if set.NoReply {
 		return nil

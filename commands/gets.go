@@ -15,7 +15,7 @@ func (gets *GetsCommand) Handle(payload []string) responses.Response {
 	items := make([]*lru.Item, 0)
 
 	for _, key := range payload {
-		if item, err := lru.Get(key); err != nil {
+		if item, ok := lru.LRU.Get(key); ok {
 			items = append(items, item)
 		}
 	}

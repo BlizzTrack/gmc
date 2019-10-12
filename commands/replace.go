@@ -36,7 +36,7 @@ func (replace *ReplaceCommand) Handle(payload []string, client io.Reader) respon
 		return responses.MessageResponse{Message: fmt.Sprintf(responses.StatusClientError, err)}
 	}
 
-	if !lru.Has(replace.Key) {
+	if !lru.LRU.Has(replace.Key) {
 		_, err = readLine(client)
 		if err != nil {
 			log.Printf("failed to read line to the end")
@@ -79,7 +79,7 @@ func (replace *ReplaceCommand) Handle(payload []string, client io.Reader) respon
 	item.Value = make([]byte, replace.Length)
 	copy(item.Value, n)
 
-	lru.Set(item)
+	lru.LRU.Add(item.Key, item)
 
 	if replace.NoReply {
 		return nil
